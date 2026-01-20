@@ -1,0 +1,49 @@
+/* body {
+    background-color: lightgray;
+} */
+.container{
+    width: 100%;
+    max-width: 800px;
+    margin: 200px auto;
+    padding: 20px;
+    border-style:solid ;
+    background-color: rgb(233, 233, 233);
+}
+h1{
+    text-align: center;
+    color:darkgoldenrod;
+}
+form{
+    display: flex;
+    flex-direction: column;
+}
+
+button{
+    display: block;
+    margin: 0 auto;
+    width: 100px;
+    padding: 10px;
+    background-color: darkgoldenrod;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+label{
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 20px;
+}
+input{
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+input:valid{
+    border: 2px solid green;
+}
+input:invalid{
+    border: 2px solid red;
+}
