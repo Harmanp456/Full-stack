@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG Paint Tool</title>
+  <style>
+    body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+}
+
+#controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: #ffffff;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin: 1rem;
+}
+
+#controls label {
+  font-weight: 500;
+  color: #333;
+}
+
+#controls input[type="color"],
+#controls input[type="number"] {
+  border: none;
+  outline: none;
+  padding: 0.3rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#undoBtn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#undoBtn:hover {
+  background: #0056b3;
+}
+
+#svgCanvas {
+  width: 85vw;
+  height: 65vh;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+  cursor: crosshair;
+}
+
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <label for="colorPicker">Brush Color:</label>
+    <input type="color" id="colorPicker" value="#000000">
+    <label for="brushSize">Brush Size:</label>
+    <input type="number" id="brushSize" value="3" min="1" max="20">
+    <button id="undoBtn">Undo</button>
+  </div>
+
+  <svg id="svgCanvas"></svg>
+
+  <script>
+    const svgCanvas = document.getElementById("svgCanvas");
+    const colorPicker = document.getElementById("colorPicker");
+    const brushSize = document.getElementById("brushSize");
+    const undoBtn = document.getElementById("undoBtn");
+
+    let drawing = false;
+    let currentPath = null;
+    let drawnPaths = [];
+
+    svgCanvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      const pt = svgCanvas.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const svgP = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
+
+      currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      currentPath.setAttribute("d", `M ${svgP.x} ${svgP.y}`);
+      currentPath.setAttribute("stroke", colorPicker.value);
+      currentPath.setAttribute("stroke-width", brushSize.value);
+      currentPath.setAttribute("fill", "none");
+      currentPath.setAttribute("stroke-linecap", "round");
+      currentPath.setAttribute("stroke-linejoin", "round");
+
+      svgCanvas.appendChild(currentPath);
+      drawnPaths.push(currentPath);
+    });
+
+    svgCanvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
+      const pt = svgCanvas.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const svgP = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
+
+      let d = currentPath.getAttribute("d");
+      d += ` L ${svgP.x} ${svgP.y}`;
+      currentPath.setAttribute("d", d);
+    });
+
+    svgCanvas.addEventListener("mouseup", () => {
+      drawing = false;
+      currentPath = null;
+    });
+
+    svgCanvas.addEventListener("mouseleave", () => {
+      drawing = false;
+      currentPath = null;
+    });
+
+    undoBtn.addEventListener("click", () => {
+      const last = drawnPaths.pop();
+      if (last) svgCanvas.removeChild(last);
+    });
+  </script>
+
+</body>
+</html>
