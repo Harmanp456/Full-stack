@@ -5,64 +5,63 @@
   <title>SVG Paint Tool</title>
   <style>
     body {
-  margin: 0;
-  font-family: "Segoe UI", Roboto, sans-serif;
-  background: #f0f2f5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100vh;
-}
+      margin: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
 
-#controls {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  background: #ffffff;
-  padding: 0.8rem 1.2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin: 1rem;
-}
+    #controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      background: #ffffff;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      margin: 1rem;
+    }
 
-#controls label {
-  font-weight: 500;
-  color: #333;
-}
+    #controls label {
+      font-weight: 500;
+      color: #333;
+    }
 
-#controls input[type="color"],
-#controls input[type="number"] {
-  border: none;
-  outline: none;
-  padding: 0.3rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
+    #controls input[type="color"],
+    #controls input[type="number"] {
+      border: none;
+      outline: none;
+      padding: 0.3rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-#undoBtn {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
+    #controls button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-#undoBtn:hover {
-  background: #0056b3;
-}
+    #controls button:hover {
+      background: #0056b3;
+    }
 
-#svgCanvas {
-  width: 85vw;
-  height: 65vh;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-  cursor: crosshair;
-}
-
+    #svgCanvas {
+      width: 85vw;
+      height: 65vh;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+      cursor: crosshair;
+    }
   </style>
 </head>
 <body>
@@ -72,6 +71,9 @@
     <input type="color" id="colorPicker" value="#000000">
     <label for="brushSize">Brush Size:</label>
     <input type="number" id="brushSize" value="3" min="1" max="20">
+    <button id="freehandBtn">Freehand</button>
+    <button id="rectBtn">Rectangle</button>
+    <button id="circleBtn">Circle</button>
     <button id="undoBtn">Undo</button>
   </div>
 
@@ -82,10 +84,19 @@
     const colorPicker = document.getElementById("colorPicker");
     const brushSize = document.getElementById("brushSize");
     const undoBtn = document.getElementById("undoBtn");
+    const freehandBtn = document.getElementById("freehandBtn");
+    const rectBtn = document.getElementById("rectBtn");
+    const circleBtn = document.getElementById("circleBtn");
 
     let drawing = false;
-    let currentPath = null;
-    let drawnPaths = [];
+    let currentShape = null;
+    let drawnShapes = [];
+    let mode = "freehand"; // default mode
+    let startPoint = null;
+
+    freehandBtn.addEventListener("click", () => mode = "freehand");
+    rectBtn.addEventListener("click", () => mode = "rectangle");
+    circleBtn.addEventListener("click", () => mode = "circle");
 
     svgCanvas.addEventListener("mousedown", (e) => {
       drawing = true;
@@ -93,43 +104,77 @@
       pt.x = e.clientX;
       pt.y = e.clientY;
       const svgP = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
+      startPoint = {x: svgP.x, y: svgP.y};
 
-      currentPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      currentPath.setAttribute("d", `M ${svgP.x} ${svgP.y}`);
-      currentPath.setAttribute("stroke", colorPicker.value);
-      currentPath.setAttribute("stroke-width", brushSize.value);
-      currentPath.setAttribute("fill", "none");
-      currentPath.setAttribute("stroke-linecap", "round");
-      currentPath.setAttribute("stroke-linejoin", "round");
+      if (mode === "freehand") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        currentShape.setAttribute("d", `M ${svgP.x} ${svgP.y}`);
+        currentShape.setAttribute("stroke", colorPicker.value);
+        currentShape.setAttribute("stroke-width", brushSize.value);
+        currentShape.setAttribute("fill", "none");
+        currentShape.setAttribute("stroke-linecap", "round");
+        currentShape.setAttribute("stroke-linejoin", "round");
+      } else if (mode === "rectangle") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        currentShape.setAttribute("x", svgP.x);
+        currentShape.setAttribute("y", svgP.y);
+        currentShape.setAttribute("width", 0);
+        currentShape.setAttribute("height", 0);
+        currentShape.setAttribute("stroke", colorPicker.value);
+        currentShape.setAttribute("stroke-width", brushSize.value);
+        currentShape.setAttribute("fill", "none");
+      } else if (mode === "circle") {
+        currentShape = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        currentShape.setAttribute("cx", svgP.x);
+        currentShape.setAttribute("cy", svgP.y);
+        currentShape.setAttribute("r", 0);
+        currentShape.setAttribute("stroke", colorPicker.value);
+        currentShape.setAttribute("stroke-width", brushSize.value);
+        currentShape.setAttribute("fill", "none");
+      }
 
-      svgCanvas.appendChild(currentPath);
-      drawnPaths.push(currentPath);
+      svgCanvas.appendChild(currentShape);
+      drawnShapes.push(currentShape);
     });
 
     svgCanvas.addEventListener("mousemove", (e) => {
-      if (!drawing) return;
+      if (!drawing || !currentShape) return;
       const pt = svgCanvas.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
       const svgP = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
 
-      let d = currentPath.getAttribute("d");
-      d += ` L ${svgP.x} ${svgP.y}`;
-      currentPath.setAttribute("d", d);
+      if (mode === "freehand") {
+        let d = currentShape.getAttribute("d");
+        d += ` L ${svgP.x} ${svgP.y}`;
+        currentShape.setAttribute("d", d);
+      } else if (mode === "rectangle") {
+        const width = svgP.x - startPoint.x;
+        const height = svgP.y - startPoint.y;
+        currentShape.setAttribute("width", Math.abs(width));
+        currentShape.setAttribute("height", Math.abs(height));
+        currentShape.setAttribute("x", Math.min(svgP.x, startPoint.x));
+        currentShape.setAttribute("y", Math.min(svgP.y, startPoint.y));
+      } else if (mode === "circle") {
+        const dx = svgP.x - startPoint.x;
+        const dy = svgP.y - startPoint.y;
+        const r = Math.sqrt(dx*dx + dy*dy);
+        currentShape.setAttribute("r", r);
+      }
     });
 
     svgCanvas.addEventListener("mouseup", () => {
       drawing = false;
-      currentPath = null;
+      currentShape = null;
     });
 
     svgCanvas.addEventListener("mouseleave", () => {
       drawing = false;
-      currentPath = null;
+      currentShape = null;
     });
 
     undoBtn.addEventListener("click", () => {
-      const last = drawnPaths.pop();
+      const last = drawnShapes.pop();
       if (last) svgCanvas.removeChild(last);
     });
   </script>
